@@ -156,5 +156,5 @@ src/
 
 ## 👥 Trabalho em grupo
 
-Projeto feito para a disciplina **Programação II – UFRPE**, em equipe de até 3 integrantes (conforme enunciado).  
+Projeto feito para a disciplina **Programação II – UFRPE**, em equipe de até 4 integrantes (conforme enunciado).  
 Os nomes dos participantes podem ser registrados no relatório/entrega oficial.
