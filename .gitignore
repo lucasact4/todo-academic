@@ -1,0 +1,22 @@
+# Compilados
+*.class
+*.log
+
+# NetBeans build
+/build/
+/dist/
+
+# Configs locais do NetBeans
+/nbproject/private/
+
+# IDEs em geral
+*.iml
+/.idea/
+/.vscode/
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Outros
+/out/
