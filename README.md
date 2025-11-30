@@ -158,14 +158,3 @@ src/
 
 Projeto feito para a disciplina **Programação II – UFRPE**, em equipe de até 3 integrantes (conforme enunciado).  
 Os nomes dos participantes podem ser registrados no relatório/entrega oficial.
-
----
-
-## 📎 Observação sobre a atividade
-
-Enunciado da disciplina (resumido):  
-> O projeto deve ser em equipes de até 3 pessoas, tema livre, contemplando:  
-> a) Herança · b) Polimorfismo · c) Coleções (ArrayList, etc.) · d) Classe abstrata ·  
-> e) Interface · f) Arquitetura em camadas · g) Interface gráfica · h) Tratamento de exceções.
-
-O **TodoAcademic** foi estruturado especificamente para atender a esses pontos de forma clara e didática.
