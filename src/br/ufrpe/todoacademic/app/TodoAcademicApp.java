@@ -4,21 +4,20 @@ import br.ufrpe.todoacademic.repository.TarefaRepository;
 import br.ufrpe.todoacademic.repository.TarefaRepositoryMemoria;
 import br.ufrpe.todoacademic.service.TarefaService;
 import br.ufrpe.todoacademic.view.MainScreen;
+import com.formdev.flatlaf.FlatLightLaf;
+
 import javax.swing.UIManager;
-import javax.swing.UIManager.LookAndFeelInfo;
 
 public class TodoAcademicApp {
 
     public static void main(String[] args) {
 
-        // tenta usar o tema Nimbus para deixar a interface mais agradável
+        // aplica o tema FlatLaf antes de criar qualquer componente Swing
         try {
-            for (LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
+            UIManager.setLookAndFeel(new FlatLightLaf());
+            UIManager.put("Component.focusColor", new java.awt.Color(0, 123, 255));
+            UIManager.put("Button.arc", 12);
+            UIManager.put("Component.arc", 12);
         } catch (Exception e) {
             // se não conseguir aplicar o tema, segue com o padrão da JVM
             e.printStackTrace();
