@@ -26,39 +26,38 @@ public class TarefaService {
      * Cria e cadastra uma TarefaSimples após validar os dados.
      */
     public Tarefa cadastrarTarefa(
-            String tipoEsperado,
-            String titulo,
-            String descricao,
-            String disciplina,
-            String responsavel,
-            String notas,
-            LocalDate dataLimite
+            String tipoEsperado, String titulo, String descricao,
+            String disciplina, String responsavel, String notas, LocalDate dataLimite
     ) throws TarefaInvalidaException, RepositoryException {
 
         validarDadosBasicos(titulo, disciplina, responsavel, dataLimite);
-
-        Tarefa tarefa;
-
-        String tipo = tipoEsperado != null ? tipoEsperado.trim().toLowerCase() : "";
-
-        switch (tipo) {
-            case "estudo":
-                tarefa = new TarefaEstudo(titulo, descricao, disciplina, responsavel, notas, dataLimite);
-                break;
-            case "trabalho em grupo":
-            case "trabalho em grupo ":
-            case "trabalho":
-                tarefa = new TarefaTrabalhoGrupo(titulo, descricao, disciplina, responsavel, notas, dataLimite);
-                break;
-            case "simples":
-            default:
-                tarefa = new TarefaSimples(titulo, descricao, disciplina, responsavel, notas, dataLimite);
-                break;
-        }
-
+        
+        Tarefa tarefa = instanciarTarefa(tipoEsperado, titulo, descricao, disciplina, responsavel, notas, dataLimite);
+        
         repository.adicionar(tarefa);
         return tarefa;
     }
+    
+    private Tarefa instanciarTarefa(String tipoTexto, String titulo, String desc, String disc, String resp, String notas, LocalDate data) {
+        String tipo = tipoTexto != null ? tipoTexto.trim().toLowerCase() : "";
+
+        switch (tipo) {
+            case "estudo":
+            case "prova":
+                return new TarefaEstudo(titulo, desc, disc, resp, notas, data);
+
+            case "trabalho em grupo":
+            case "trabalho":
+            case "apresentação":
+            case "apresentacao":
+                return new TarefaTrabalhoGrupo(titulo, desc, disc, resp, notas, data);
+
+            case "simples":
+            default:
+                return new TarefaSimples(titulo, desc, disc, resp, notas, data);
+        }
+    }
+    
     public Tarefa cadastrarTarefaSimples(
             String titulo,
             String descricao,
@@ -88,21 +87,49 @@ public class TarefaService {
     /**
      * Atualiza uma tarefa já existente (assumindo que a tarefa já tem id válido).
      */
-    public void atualizarTarefa(Tarefa tarefa)
+
+    public void atualizarTarefa(Tarefa tarefaExistente, String novoTipo)
             throws TarefaInvalidaException, RepositoryException {
 
-        if (tarefa == null) {
+        if (tarefaExistente == null) {
             throw new TarefaInvalidaException("Tarefa não pode ser nula.");
         }
 
+        // Valida os dados que já foram setados no objeto
         validarDadosBasicos(
-                tarefa.getTitulo(),
-                tarefa.getDisciplina(),
-                tarefa.getResponsavel(),
-                tarefa.getDataLimite()
+                tarefaExistente.getTitulo(),
+                tarefaExistente.getDisciplina(),
+                tarefaExistente.getResponsavel(),
+                tarefaExistente.getDataLimite()
         );
 
-        repository.atualizar(tarefa);
+        // Verifica se o tipo mudou
+        // (Ignora case para comparar "Prova" com "prova")
+        if (tarefaExistente.getTipo().equalsIgnoreCase(novoTipo)) {
+            // Se o tipo é o mesmo, apenas atualiza os dados normais
+            repository.atualizar(tarefaExistente);
+        } else {
+            // SE O TIPO MUDOU: Precisamos criar um objeto NOVO da classe certa
+            
+            // 1. Cria a nova instância com os dados atualizados
+            Tarefa novaTarefa = instanciarTarefa(
+                    novoTipo,
+                    tarefaExistente.getTitulo(),
+                    tarefaExistente.getDescricao(),
+                    tarefaExistente.getDisciplina(),
+                    tarefaExistente.getResponsavel(),
+                    tarefaExistente.getNotas(),
+                    tarefaExistente.getDataLimite()
+            );
+
+            // 2. IMPORTANTE: Copiar os dados de sistema (ID, Criação, Status) do antigo para o novo
+            novaTarefa.setId(tarefaExistente.getId()); 
+            novaTarefa.setDataCriacao(tarefaExistente.getDataCriacao());
+            novaTarefa.setStatus(tarefaExistente.getStatus());
+
+            // 3. Manda o repositório atualizar (ele vai substituir o objeto antigo pelo novo baseando-se no ID)
+            repository.atualizar(novaTarefa);
+        }
     }
 
     /**
