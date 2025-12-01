@@ -1,79 +1,86 @@
-
 # TodoAcademic 🎓✅
+
 Aplicativo desktop em **Java Swing** para gerenciamento de tarefas acadêmicas em grupo.
 
-Projeto desenvolvido na disciplina **Programação II** do curso de **Licenciatura em Computação – UFRPE**, atendendo aos requisitos de:
-- Herança
-- Polimorfismo
-- Coleções (`ArrayList`)
-- Classe abstrata
-- Interface
-- Arquitetura em camadas
-- Interface gráfica (GUI)
-- Tratamento de exceções
+Projeto da disciplina **Programação II** – **Licenciatura em Computação (UFRPE)**.
+
+Atende aos requisitos de:
+
+- Herança  
+- Polimorfismo  
+- Coleções (`ArrayList`)  
+- Classe abstrata  
+- Interface  
+- Arquitetura em camadas  
+- Interface gráfica (GUI)  
+- Tratamento de exceções  
 
 ---
 
-## 🧠 Ideia do Projeto
+## 🧠 Ideia do projeto
 
-O **TodoAcademic** é um gerenciador simples de tarefas para um grupo de alunos. Cada tarefa pode representar:
+O **TodoAcademic** é um gerenciador de tarefas voltado para a rotina acadêmica de um grupo de alunos.  
+Cada tarefa pode representar, por exemplo:
 
 - Trabalho em grupo  
 - Estudo individual  
-- Atividade simples (lista, leitura, etc.)
+- Atividade simples (lista, leitura, exercício etc.)
 
-Campos principais da tarefa:
+Cada tarefa possui:
 
 - **Título**
 - **Disciplina**
 - **Responsável**
-- **Tipo**: Simples, Estudo ou Trabalho em Grupo
-- **Data limite** (prazo) – formato `dd/MM/yyyy`
-- **Notas/observações** (opcional)
-- **Descrição** (opcional)
+- **Tipo**: Simples, Estudo, Trabalho em Grupo, Prova, Apresentação
+- **Data limite** (`DD/MM/AAAA`)
+- **Notas / observações** (opcional)
+- **Descrição detalhada** (opcional)
 
-A tabela de tarefas permite:
+Na tela principal é possível:
 
-- Criar
-- Editar
-- Concluir
-- Excluir tarefas
+- **Criar** tarefas  
+- **Visualizar / Editar** tarefas  
+- **Concluir** tarefas  
+- **Excluir** tarefas  
+
+Quando não há tarefas, a aplicação exibe uma mensagem amigável orientando o usuário a criar a primeira.
 
 ---
 
-## 🏛 Arquitetura em Camadas
+## 🏛 Arquitetura em camadas
 
 Estrutura simplificada dos pacotes:
 
 ```text
 src/
  ├─ br.ufrpe.todoacademic.app
- │   └─ TodoAcademicApp.java      # Classe com o método main
+ │   └─ TodoAcademicApp.java        # Ponto de entrada (main)
  │
- ├─ br.ufrpe.todoacademic.model   # Entidades e hierarquia de tarefas
- │   ├─ Tarefa.java               # Classe abstrata base
+ ├─ br.ufrpe.todoacademic.model     # Entidades e hierarquia de tarefas
+ │   ├─ Tarefa.java                 # Classe abstrata base
  │   ├─ TarefaSimples.java
  │   ├─ TarefaEstudo.java
  │   ├─ TarefaTrabalhoGrupo.java
- │   └─ StatusTarefa.java         # Enum com estados da tarefa
+ │   ├─ TarefaProva.java
+ │   └─ StatusTarefa.java           # Enum com estados da tarefa
  │
  ├─ br.ufrpe.todoacademic.repository
- │   ├─ TarefaRepository.java         # Interface de repositório (CRUD)
- │   └─ TarefaRepositoryMemoria.java  # Implementação usando ArrayList
+ │   ├─ TarefaRepository.java           # Interface de repositório (CRUD)
+ │   └─ TarefaRepositoryMemoria.java    # Implementação usando ArrayList
  │
  ├─ br.ufrpe.todoacademic.service
- │   └─ TarefaService.java        # Regras de negócio e validações
+ │   └─ TarefaService.java          # Regras de negócio e validações
  │
  ├─ br.ufrpe.todoacademic.exception
  │   ├─ TarefaInvalidaException.java
  │   └─ RepositoryException.java
  │
  ├─ br.ufrpe.todoacademic.util
- │   └─ TarefaTableModel.java     # TableModel para a JTable
+ │   └─ TarefaTableModel.java       # TableModel da JTable de tarefas
  │
- └─ br.ufrpe.todoacademic.view    # Interface gráfica (Swing)
-     ├─ MainScreen.java           # Tela principal (JFrame)
-     └─ TarefaFormDialog.java     # Formulário de cadastro/edição (JDialog)
+ └─ br.ufrpe.todoacademic.view      # Interface gráfica (Swing)
+     ├─ MainScreen.java             # Tela principal (JFrame)
+     └─ TarefaFormDialog.java       # Formulário de cadastro/edição (JDialog)
 ```
 
 ---
@@ -82,46 +89,53 @@ src/
 
 - **Herança / Classe abstrata**  
   - `Tarefa` é uma classe abstrata base.  
-  - `TarefaSimples`, `TarefaEstudo` e `TarefaTrabalhoGrupo` herdam de `Tarefa`.
+  - `TarefaSimples`, `TarefaEstudo`, `TarefaTrabalhoGrupo` e `TarefaProva` herdam de `Tarefa`.
 
 - **Polimorfismo**  
-  - `List<Tarefa>` armazena qualquer subtipo de tarefa.  
-  - Métodos como `getTipo()` e `calcularPrioridade()` são sobrescritos nas subclasses.
+  - A aplicação trabalha com listas de `Tarefa` (tipo genérico).  
+  - Métodos como `calcularPrioridade()` e `getTipo()` são sobrescritos nas subclasses e usados de forma polimórfica.
 
 - **Coleções (`ArrayList`)**  
-  - `TarefaRepositoryMemoria` usa `ArrayList<Tarefa>` para armazenar os dados em memória.
+  - `TarefaRepositoryMemoria` utiliza `ArrayList<Tarefa>` para armazenar as tarefas em memória.  
 
 - **Interface**  
-  - `TarefaRepository` define as operações de repositório.  
+  - `TarefaRepository` define o contrato do repositório (métodos de CRUD).  
   - `TarefaRepositoryMemoria` implementa essa interface.
 
 - **Arquitetura em camadas**  
-  - Separação em Model, Repository, Service, View, Exception e App (main).
+  - Separação clara em:
+    - `model` (domínio)
+    - `repository` (dados)
+    - `service` (regras de negócio)
+    - `view` (GUI)
+    - `app` (bootstrap / main)
+    - `exception` (tratamento de erros específicos)
 
-- **GUI (interface gráfica)**  
-  - Construída com Swing: `JFrame`, `JDialog`, `JTable`, `JButton`, `JLabel`, etc.  
-  - Layouts: `GroupLayout`, `BorderLayout`, `GridBagLayout`.  
-  - Ícones em `src/resources` para melhorar a apresentação.
+- **Interface gráfica (GUI)**  
+  - Construída com Java Swing:
+    - `JFrame`, `JDialog`, `JTable`, `JButton`, `JLabel`, `JTextField`, `JTextArea`, `JComboBox` etc.  
+  - Uso de ícones e cores para melhorar a visualização da prioridade das tarefas.
 
 - **Tratamento de exceções**  
-  - `TarefaInvalidaException` para validações de domínio.  
-  - `RepositoryException` para erros na camada de repositório.  
-  - `DateTimeParseException` tratada na leitura da data.  
-  - Mensagens amigáveis via `JOptionPane`.
+  - `TarefaInvalidaException` para erros de validação de domínio.  
+  - `RepositoryException` para problemas na camada de repositório.  
+  - `DateTimeParseException` tratada ao ler a data digitada pelo usuário.  
+  - Exibição de mensagens amigáveis via `JOptionPane`.
 
-> 💡 Decisão de projeto: as tarefas são salvas somente em memória (`ArrayList`).  
-> Ao fechar o aplicativo, os dados são perdidos. Isso simplifica o foco didático em OO, camadas, GUI, herança e polimorfismo.
+> 💡 As tarefas são salvas em memória (via `ArrayList`).  
+> Ao fechar o aplicativo, os dados são descartados. A ideia é manter o foco em orientação a objetos, camadas, GUI, herança e polimorfismo.
 
 ---
 
-## 🖥️ Funcionalidades
+## 🖥️ Funcionalidades da aplicação
 
-- Listar tarefas em uma tabela.  
-- Cadastrar nova tarefa (com tipo, título, disciplina, responsável, prazo e campos opcionais).  
-- Editar tarefa existente.  
-- Marcar tarefa como concluída.  
-- Excluir tarefa com confirmação.  
-- Mensagem amigável quando não há tarefas cadastradas.
+- Listar todas as tarefas em uma tabela.  
+- Cadastrar novas tarefas com tipo, título, disciplina, responsável e prazo.  
+- Editar tarefas existentes.  
+- Marcar tarefas como concluídas.  
+- Excluir tarefas com confirmação.  
+- Ver detalhes de uma tarefa em modo só leitura.  
+- Exibir regras de prioridade na lateral do formulário, de acordo com o tipo escolhido.
 
 ---
 
@@ -129,7 +143,7 @@ src/
 
 - **Linguagem:** Java  
 - **Versão:** JDK 8+  
-- **IDE:** NetBeans (projeto Ant padrão)  
+- **IDE:** NetBeans (projeto Ant)  
 - **GUI:** Java Swing  
 - **Coleções:** `List`, `ArrayList`  
 - **Controle de versão:** Git / GitHub  
@@ -138,16 +152,20 @@ src/
 
 ## 🚀 Como executar
 
-### 1. Abrir no NetBeans
+### 1. Abrir o projeto no NetBeans
 
-1. Abra o **NetBeans**.  
-2. Vá em **File > Open Project...**.  
-3. Selecione a pasta `TodoAcademic` (onde estão `build.xml` e `nbproject/`).  
-4. Clique em **Open Project**.
+1. Abrir o **NetBeans**.  
+2. Ir em **File > Open Project...**.  
+3. Selecionar a pasta do projeto (`TodoAcademic`), onde ficam `build.xml` e `nbproject/`.  
+4. Clicar em **Open Project**.
 
 ### 2. Rodar a aplicação
 
-- Clique com o botão direito no projeto → **Run**  
-  - A classe principal é `br.ufrpe.todoacademic.app.TodoAcademicApp`.  
-- A tela principal (**MainScreen**) será aberta com os botões:
-  - **Nova tarefa**, **Editar**, **Concluir**, **Excluir**.
+1. Botão direito no projeto → **Run**.  
+2. A classe principal é:
+
+   ```text
+   br.ufrpe.todoacademic.app.TodoAcademicApp
+   ```
+
+3. A tela principal (**MainScreen**) será aberta com os botões de gestão de tarefas.
