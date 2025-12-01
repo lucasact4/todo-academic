@@ -1,5 +1,6 @@
 package br.ufrpe.todoacademic.exception;
 
+// Exceção usada para erros de validação de dados da tarefa
 public class TarefaInvalidaException extends Exception {
 
     public TarefaInvalidaException(String message) {

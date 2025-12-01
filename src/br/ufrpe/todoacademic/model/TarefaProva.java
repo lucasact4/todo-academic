@@ -3,14 +3,19 @@ package br.ufrpe.todoacademic.model;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
+// Tarefa específica para provas (usa uma regra de prioridade mais rígida)
 public class TarefaProva extends Tarefa {
 
     public TarefaProva() {
         super();
     }
 
-    public TarefaProva(String titulo, String descricao, String disciplina, 
-                       String responsavel, String notas, LocalDate dataLimite) {
+    public TarefaProva(String titulo,
+                       String descricao,
+                       String disciplina,
+                       String responsavel,
+                       String notas,
+                       LocalDate dataLimite) {
         super(titulo, descricao, disciplina, responsavel, notas, dataLimite);
     }
 
@@ -19,19 +24,19 @@ public class TarefaProva extends Tarefa {
         LocalDate hoje = LocalDate.now();
         LocalDate limite = getDataLimite();
 
+        // prova sem data já acende um alerta médio
         if (limite == null) {
-            // Prova sem data é estranho, mas vamos tratar como alerta médio
-            return 3; 
+            return 3;
         }
 
         long dias = ChronoUnit.DAYS.between(hoje, limite);
 
-        // Lógica "Tensa" de Prova:
-        if (dias <= 0)  return 5; // É HOJE! (ou passou)
-        if (dias <= 3)  return 4; // 3 dias antes = Alta (Revisão final)
-        if (dias <= 7)  return 3; // 1 semana antes = Média
-        if (dias <= 20) return 2; // Até 20 dias = Normal
-        return 1; // Mais que 20 dias = Baixa
+        // quanto mais perto do dia da prova, mais urgente
+        if (dias <= 0)  return 5; // hoje ou atrasada
+        if (dias <= 3)  return 4; // reta final de revisão
+        if (dias <= 7)  return 3;
+        if (dias <= 20) return 2;
+        return 1;
     }
 
     @Override

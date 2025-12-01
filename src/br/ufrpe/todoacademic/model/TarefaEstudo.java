@@ -3,14 +3,8 @@ package br.ufrpe.todoacademic.model;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
-/**
- * Tarefa de Estudo.
- * Poderia representar horas de estudo, revisão para prova etc.
- */
+// Versão de tarefa voltada para estudo (revisão, leitura, etc.)
 public class TarefaEstudo extends Tarefa {
-
-    // Poderia ter campos adicionais (ex.: horasPrevistas), mas para simplificar
-    // vamos só mudar a forma de calcular a prioridade.
 
     public TarefaEstudo() {
         super();
@@ -30,13 +24,14 @@ public class TarefaEstudo extends Tarefa {
         LocalDate hoje = LocalDate.now();
         LocalDate limite = getDataLimite();
 
+        // estudo sem prazo ainda assim tem um peso maior que uma tarefa simples
         if (limite == null) {
-            return 2; // estudo sem prazo definido ainda tem alguma importância
+            return 2;
         }
 
         long dias = ChronoUnit.DAYS.between(hoje, limite);
 
-        // Para estudo, vamos considerar tudo "mais urgente":
+        // para estudo eu considero quase tudo mais urgente que o normal
         if (dias <= 0)  return 5; // hoje ou atrasada
         if (dias <= 3)  return 4;
         if (dias <= 10) return 3;

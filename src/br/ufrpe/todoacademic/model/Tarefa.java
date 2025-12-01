@@ -2,47 +2,35 @@ package br.ufrpe.todoacademic.model;
 
 import java.time.LocalDate;
 
-/**
- * Classe base abstrata para qualquer tipo de tarefa do sistema.
- *
- * Subclasses exemplos:
- *  - TarefaSimples
- *  - TarefaEstudo
- *  - TarefaTrabalhoGrupo
- */
 public abstract class Tarefa {
 
-    private int id;                    // gerenciado pelo repositório em memória
-    private String titulo;             // equivalente ao "name" do Task antigo
+    // id interno usado pelo repositório em memória
+    private int id;
+
+    private String titulo;
     private String descricao;
-    private String disciplina;         // ex.: Programação II, Didática...
-    private String responsavel;        // ex.: Lucas, Guilherme...
-    private String notas;              // observações adicionais
+    private String disciplina;   // ex.: Programação II, Didática
+    private String responsavel;  // ex.: Lucas, Guilherme
+    private String notas;
 
     private LocalDate dataCriacao;
     private LocalDate dataLimite;
     private StatusTarefa status;
 
-    // ------------- Construtores -------------
-
-    /**
-     * Construtor padrão: define dataCriacao como hoje e status PENDENTE.
-     */
+    // Construtor básico: toda tarefa já nasce como pendente na data atual
     protected Tarefa() {
         this.dataCriacao = LocalDate.now();
         this.status = StatusTarefa.PENDENTE;
     }
 
-    /**
-     * Construtor completo (sem id; o id será definido pelo repositório).
-     */
+    // Construtor usado pelos tipos concretos de tarefa
     protected Tarefa(String titulo,
                      String descricao,
                      String disciplina,
                      String responsavel,
                      String notas,
                      LocalDate dataLimite) {
-        this(); // chama o construtor padrão
+        this();
         this.titulo = titulo;
         this.descricao = descricao;
         this.disciplina = disciplina;
@@ -51,25 +39,17 @@ public abstract class Tarefa {
         this.dataLimite = dataLimite;
     }
 
-    // ------------- Métodos abstratos (polimorfismo) -------------
-
-    /**
-     * Cada subtipo calcula a prioridade de forma diferente.
-     * Ex.: tarefas de estudo podem considerar dificuldade, trabalhos em grupo peso da nota etc.
-     */
+    // Cada subtipo (Simples, Estudo, Prova...) implementa sua própria regra de prioridade
     public abstract int calcularPrioridade();
 
-    /**
-     * Retorna o "tipo" da tarefa (Simples, Estudo, Trabalho em Grupo, ...).
-     */
+    // Usado para exibir o tipo da tarefa na interface
     public abstract String getTipo();
-
-    // ------------- Métodos de apoio -------------
 
     public boolean estaConcluida() {
         return status == StatusTarefa.CONCLUIDA;
     }
 
+    // Marca a tarefa como concluída (usado pelo botão "Concluir" da tela principal)
     public void marcarConcluida() {
         this.status = StatusTarefa.CONCLUIDA;
     }
@@ -77,8 +57,6 @@ public abstract class Tarefa {
     public void marcarPendente() {
         this.status = StatusTarefa.PENDENTE;
     }
-
-    // ------------- Getters / Setters -------------
 
     public int getId() {
         return id;
@@ -151,8 +129,6 @@ public abstract class Tarefa {
     public void setStatus(StatusTarefa status) {
         this.status = status;
     }
-
-    // ------------- Representação textual (útil em debug / listas simples) -------------
 
     @Override
     public String toString() {

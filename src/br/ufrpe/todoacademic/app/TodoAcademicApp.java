@@ -11,27 +11,29 @@ public class TodoAcademicApp {
 
     public static void main(String[] args) {
 
-        // (opcional) configura o LookAndFeel parecido com o do projeto antigo
+        // tenta usar o tema Nimbus para deixar a interface mais agradável
         try {
             for (LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) { // ou "Java Swing", se você preferir
+                if ("Nimbus".equals(info.getName())) {
                     UIManager.setLookAndFeel(info.getClassName());
                     break;
                 }
             }
         } catch (Exception e) {
-            // se der erro, segue com o padrão
+            // se não conseguir aplicar o tema, segue com o padrão da JVM
             e.printStackTrace();
         }
 
-        // cria repositório em memória e o service
+        // camada de dados em memória (simula um "banco" de tarefas)
         TarefaRepository repository = new TarefaRepositoryMemoria();
+
+        // camada de regras de negócio
         TarefaService tarefaService = new TarefaService(repository);
 
-        // tudo de GUI deve rodar na EventQueue
+        // inicializa a interface gráfica na Event Dispatch Thread
         java.awt.EventQueue.invokeLater(() -> {
-            MainScreen frame = new MainScreen(tarefaService); // nossa "MainScreen" nova
-            frame.setLocationRelativeTo(null);              // centraliza na tela
+            MainScreen frame = new MainScreen(tarefaService);
+            frame.setLocationRelativeTo(null);
             frame.setVisible(true);
         });
     }

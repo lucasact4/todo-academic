@@ -1,5 +1,6 @@
 package br.ufrpe.todoacademic.exception;
 
+// Exceção genérica para erros na camada de repositório
 public class RepositoryException extends Exception {
 
     public RepositoryException(String message) {

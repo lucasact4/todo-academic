@@ -7,6 +7,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
+// TableModel usado pela JTable da tela principal para exibir a lista de tarefas
 public class TarefaTableModel extends AbstractTableModel {
 
     private final String[] colunas = {
@@ -20,6 +21,7 @@ public class TarefaTableModel extends AbstractTableModel {
             "Prioridade"
     };
 
+    // fonte de dados que a tabela vai renderizar
     private List<Tarefa> tarefas = new ArrayList<>();
 
     private final DateTimeFormatter dateFormatter =
@@ -54,7 +56,7 @@ public class TarefaTableModel extends AbstractTableModel {
                     ? t.getDataLimite().format(dateFormatter)
                     : "";
             case 6 -> t.getStatus() != null ? t.getStatus().name() : "";
-            case 7 -> t.calcularPrioridade();
+            case 7 -> t.calcularPrioridade(); // usa a regra de cada subtipo de Tarefa
             default -> "";
         };
     }
@@ -69,16 +71,17 @@ public class TarefaTableModel extends AbstractTableModel {
 
     @Override
     public boolean isCellEditable(int rowIndex, int columnIndex) {
-        // todas as colunas só leitura por enquanto
+        // tabela toda só leitura (edição acontece no formulário próprio)
         return false;
     }
 
-    // --------- Métodos de apoio ---------
+    // --------- Métodos de apoio usados pela tela ---------
 
     public List<Tarefa> getTarefas() {
         return tarefas;
     }
 
+    // atualiza a lista e avisa a JTable para se redesenhar
     public void setTarefas(List<Tarefa> tarefas) {
         this.tarefas = tarefas != null ? tarefas : new ArrayList<>();
         fireTableDataChanged();

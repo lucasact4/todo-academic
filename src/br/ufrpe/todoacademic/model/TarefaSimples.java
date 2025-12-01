@@ -3,13 +3,8 @@ package br.ufrpe.todoacademic.model;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
-/**
- * Tarefa "normal", sem regras extras além do prazo.
- * É a implementação mais básica de Tarefa.
- */
+// Tarefa mais básica: só leva em conta o prazo para definir a prioridade
 public class TarefaSimples extends Tarefa {
-
-    // --------- Construtores ---------
 
     public TarefaSimples() {
         super();
@@ -24,29 +19,19 @@ public class TarefaSimples extends Tarefa {
         super(titulo, descricao, disciplina, responsavel, notas, dataLimite);
     }
 
-    // --------- Implementações abstratas ---------
-
-    /**
-     * Exemplo de regra:
-     * quanto mais perto do prazo, maior a prioridade.
-     *
-     * 5 = muito urgente (vencida ou vence hoje)
-     * 4 = vence em até 2 dias
-     * 3 = vence em até 7 dias
-     * 2 = vence em até 14 dias
-     * 1 = sem prazo definido ou longe demais
-     */
     @Override
     public int calcularPrioridade() {
         LocalDate hoje = LocalDate.now();
         LocalDate limite = getDataLimite();
 
+        // se não tiver prazo, fica como prioridade baixa
         if (limite == null) {
             return 1;
         }
 
         long dias = ChronoUnit.DAYS.between(hoje, limite);
 
+        // quanto mais perto do prazo, maior o número (mais urgente)
         if (dias <= 0)  return 5; // hoje ou atrasada
         if (dias <= 2)  return 4;
         if (dias <= 7)  return 3;

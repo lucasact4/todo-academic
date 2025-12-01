@@ -6,9 +6,12 @@ import br.ufrpe.todoacademic.model.Tarefa;
 import java.util.ArrayList;
 import java.util.List;
 
+// Implementação em memória do repositório de tarefas
 public class TarefaRepositoryMemoria implements TarefaRepository {
 
+    // armazenamento em memória usando lista simples
     private final List<Tarefa> tarefas = new ArrayList<>();
+    // controle de id incremental (simulando auto incremento de banco)
     private int proximoId = 1;
 
     @Override
@@ -16,7 +19,7 @@ public class TarefaRepositoryMemoria implements TarefaRepository {
         if (tarefa == null) {
             throw new RepositoryException("Tarefa não pode ser nula");
         }
-        tarefa.setId(proximoId++);   // vamos garantir que Tarefa tenha setId(int)
+        tarefa.setId(proximoId++);
         tarefas.add(tarefa);
     }
 
@@ -53,7 +56,7 @@ public class TarefaRepositoryMemoria implements TarefaRepository {
 
     @Override
     public synchronized List<Tarefa> listarTodas() {
-        // devolve uma cópia para não expor a lista interna
+        // devolve cópia para não expor a lista interna
         return new ArrayList<>(tarefas);
     }
 
@@ -72,8 +75,7 @@ public class TarefaRepositoryMemoria implements TarefaRepository {
         return resultado;
     }
 
-    // --------- métodos auxiliares internos ---------
-
+    // busca a posição da tarefa na lista pelo id
     private int encontrarIndicePorId(int id) {
         for (int i = 0; i < tarefas.size(); i++) {
             if (tarefas.get(i).getId() == id) {
