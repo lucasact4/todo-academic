@@ -408,7 +408,7 @@ public class TarefaFormDialog extends JDialog {
                 break;
 
             case "apresentação":
-                conteudo = "<b>Apresentação:</b><br>Requer preparação de slides e ensaio.<br>"
+                conteudo = "<b>Apresentação:</b><br>Requer preparação de conteúdo.<br>"
                         + "<ul>"
                         + "<li>Inicia com prioridade mínima <span class='yellow'>Média (3)</span>.</li>"
                         + "<li>5 dias antes &rarr; Sobe para <span class='orange'>Alta (4)</span> para ensaios.</li>"
