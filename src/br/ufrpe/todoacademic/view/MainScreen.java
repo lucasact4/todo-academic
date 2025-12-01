@@ -11,26 +11,40 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.JTableHeader;
+import javax.swing.table.TableColumn;
 import java.awt.*;
 import java.util.List;
 
 public class MainScreen extends JFrame {
 
-    // --- PALETA DE CORES ---
-    private final Color COLOR_PRIMARY_GREEN = new Color(0, 207, 138);
-    private final Color COLOR_ACTION_BLUE = new Color(0, 123, 255);
+    // --- PALETA DE CORES (DESIGN SYSTEM) ---
     
-    // Novas cores solicitadas (Tons pastéis/claros)
-    // Amarelo claro para o fundo + Texto escuro para leitura
-    private final Color COLOR_EDIT_BG = new Color(255, 240, 160); 
-    private final Color COLOR_EDIT_TEXT = new Color(100, 80, 0); 
+    // 1. Cores Institucionais (Header)
+    private final Color COLOR_HEADER_BG = new Color(0, 153, 102); // Verde UFRPE
+    private final Color COLOR_BG_LIGHT = new Color(248, 249, 250); // Fundo da tela
 
-    // Vermelho claro para o fundo + Vermelho escuro para o texto
-    private final Color COLOR_DELETE_BG = new Color(255, 215, 215); 
-    private final Color COLOR_DELETE_TEXT = new Color(180, 40, 40);
-    
-    private final Color COLOR_BG_LIGHT = new Color(248, 249, 250);
-    private final Color COLOR_TEXT_DARK = new Color(51, 51, 51);
+    // 2. Cores dos Botões (Estilo "Tinted" - Fundo Claro + Texto Escuro)
+    // Isso garante que seus ícones CINZA ESCURO fiquem visíveis e bonitos.
+
+    // Botão NOVA TAREFA (Azul - Criação)
+    private final Color BTN_NEW_BG = new Color(225, 240, 255); 
+    private final Color BTN_NEW_FG = new Color(0, 80, 180);
+
+    // Botão VISUALIZAR (Cinza/Roxo Suave - Neutro)
+    private final Color BTN_VIEW_BG = new Color(240, 240, 245);
+    private final Color BTN_VIEW_FG = new Color(70, 70, 90);
+
+    // Botão EDITAR (Laranja/Âmbar - Atenção)
+    private final Color BTN_EDIT_BG = new Color(255, 248, 220); 
+    private final Color BTN_EDIT_FG = new Color(180, 90, 0);
+
+    // Botão CONCLUIR (Verde - Sucesso)
+    private final Color BTN_DONE_BG = new Color(225, 255, 235);
+    private final Color BTN_DONE_FG = new Color(0, 120, 60);
+
+    // Botão EXCLUIR (Vermelho - Perigo)
+    private final Color BTN_DEL_BG  = new Color(255, 230, 230);
+    private final Color BTN_DEL_FG  = new Color(200, 40, 40);
 
     private final TarefaService tarefaService;
 
@@ -52,7 +66,6 @@ public class MainScreen extends JFrame {
     public static void main(String[] args) {
         try {
             UIManager.setLookAndFeel(new FlatLightLaf());
-            // Define a cor de foco global para o azul (ou verde, conforme preferir)
             UIManager.put("Component.focusColor", new Color(0, 123, 255)); 
             UIManager.put("Button.arc", 12);
             UIManager.put("Component.arc", 12);
@@ -88,19 +101,25 @@ public class MainScreen extends JFrame {
         setLocationRelativeTo(null);
     }
 
-    // --- PAINÉIS ---
-
+    // --- HEADER ---
     private JPanel createHeaderPanel() {
         JPanel header = new JPanel(new BorderLayout());
-        header.setBackground(COLOR_PRIMARY_GREEN);
+        header.setBackground(COLOR_HEADER_BG);
         header.setBorder(new EmptyBorder(20, 30, 20, 30));
 
+        // Bloco de Título
         JPanel titleBlock = new JPanel(new GridLayout(2, 1));
         titleBlock.setOpaque(false);
         
         JLabel lblTitle = new JLabel("TodoAcademic");
         lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 26));
         lblTitle.setForeground(Color.WHITE);
+        
+        java.net.URL imgUrl = getClass().getResource("/br/ufrpe/todoacademic/resources/tick.png");
+        if (imgUrl != null) {
+            lblTitle.setIcon(new ImageIcon(imgUrl));
+            lblTitle.setIconTextGap(15);
+        }
         
         JLabel lblSub = new JLabel("Programação II · UFRPE");
         lblSub.setFont(new Font("Segoe UI", Font.PLAIN, 14));
@@ -109,6 +128,7 @@ public class MainScreen extends JFrame {
         titleBlock.add(lblTitle);
         titleBlock.add(lblSub);
 
+        // Bloco do Grupo
         JLabel lblGroup = new JLabel("<html>Grupo:<br/><b>Lucas · Guilherme · Sofia · Julia</b></html>");
         lblGroup.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         lblGroup.setForeground(Color.WHITE);
@@ -120,94 +140,92 @@ public class MainScreen extends JFrame {
         return header;
     }
 
-    private JPanel createToolbarPanel() {
-        JPanel toolbar = new JPanel(new BorderLayout());
-        toolbar.setBackground(COLOR_BG_LIGHT);
-        toolbar.setOpaque(false);
+    // --- TOOLBAR (BOTÕES) ---
+    private JPanel createToolbarPanel() { 
+        JPanel toolbar = new JPanel();
+        toolbar.setLayout(new BoxLayout(toolbar, BoxLayout.LINE_AXIS));
+        toolbar.setBackground(Color.WHITE);
+        // Borda inferior suave para separar da tabela
+        toolbar.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(230,230,230)),
+            new EmptyBorder(15, 0, 15, 0)
+        ));
 
-        JLabel lblSection = new JLabel("Minhas Tarefas");
-        lblSection.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        lblSection.setForeground(COLOR_TEXT_DARK);
+        // 1. Nova Tarefa (AZUL)
+        JButton btnNova = createButton("Nova Tarefa", "/br/ufrpe/todoacademic/resources/add.png", BTN_NEW_BG, BTN_NEW_FG);
+        btnNova.addActionListener(e -> abrirFormularioNovaTarefa());
 
-        // FlowLayout com gap maior entre botões (15px)
-        JPanel buttonGroup = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
-        buttonGroup.setOpaque(false);
+        // 2. Visualizar (CINZA)
+        JButton btnVisualizar = createButton("Visualizar", "/br/ufrpe/todoacademic/resources/eye.png", BTN_VIEW_BG, BTN_VIEW_FG);
+        btnVisualizar.addActionListener(e -> onVisualizarTarefa());
 
-        // 1. Botão Nova Tarefa (Verde)
-        JButton btnNova = createButton("Nova Tarefa", "/resources/add.png", COLOR_PRIMARY_GREEN, Color.WHITE);
-        
-        // 2. Botão Editar (Agora Amarelo Claro)
-        // Usa o fundo amarelo claro e texto marrom/escuro
-        JButton btnEditar = createButton("Editar", "/resources/edit.png", COLOR_EDIT_BG, COLOR_EDIT_TEXT);
-        
-        // 3. Botão Concluir (Azul)
-        JButton btnConcluir = createButton("Concluir", "/resources/check.png", COLOR_ACTION_BLUE, Color.WHITE);
-        
-        // 4. Botão Excluir (Agora Vermelho Claro)
-        // Usa fundo vermelho claro e texto vermelho escuro (mantém o alerta de perigo, mas suave)
-        JButton btnExcluir = createButton("Excluir", "/resources/delete.png", COLOR_DELETE_BG, COLOR_DELETE_TEXT);
-
-        // Listeners
-        btnNova.addActionListener(e -> onNovaTarefa());
+        // 3. Editar (LARANJA)
+        JButton btnEditar = createButton("Editar", "/br/ufrpe/todoacademic/resources/edit.png", BTN_EDIT_BG, BTN_EDIT_FG);
         btnEditar.addActionListener(e -> onEditarTarefa());
+
+        // 4. Concluir (VERDE)
+        JButton btnConcluir = createButton("Concluir", "/br/ufrpe/todoacademic/resources/check.png", BTN_DONE_BG, BTN_DONE_FG);
         btnConcluir.addActionListener(e -> onConcluirTarefa());
+        
+        // 5. Excluir (VERMELHO)
+        JButton btnExcluir = createButton("Excluir", "/br/ufrpe/todoacademic/resources/delete.png", BTN_DEL_BG, BTN_DEL_FG);
         btnExcluir.addActionListener(e -> onExcluirTarefa());
 
-        buttonGroup.add(btnNova);
-        buttonGroup.add(btnEditar);
-        buttonGroup.add(btnConcluir);
-        buttonGroup.add(btnExcluir);
+        // --- ALINHAMENTO CENTRALIZADO ---
+        toolbar.add(Box.createHorizontalGlue()); // Cola Esquerda
+        
+        toolbar.add(btnNova);
+        toolbar.add(Box.createHorizontalStrut(15));
+        
+        toolbar.add(btnVisualizar);
+        toolbar.add(Box.createHorizontalStrut(15));
+        
+        toolbar.add(btnEditar);
+        toolbar.add(Box.createHorizontalStrut(15));
+        
+        toolbar.add(btnConcluir);
+        toolbar.add(Box.createHorizontalStrut(15));
+        
+        toolbar.add(btnExcluir);
 
-        toolbar.add(lblSection, BorderLayout.WEST);
-        toolbar.add(buttonGroup, BorderLayout.EAST);
+        toolbar.add(Box.createHorizontalGlue()); // Cola Direita
 
         return toolbar;
     }
 
-    /**
-     * Método auxiliar refatorado para maior controle de cores e alinhamento
-     */
     private JButton createButton(String text, String iconPath, Color bgColor, Color fgColor) {
         JButton btn = new JButton(text);
         
         try {
-            btn.setIcon(new ImageIcon(getClass().getResource(iconPath)));
+            java.net.URL imgUrl = getClass().getResource(iconPath);
+            if(imgUrl != null) {
+                btn.setIcon(new ImageIcon(imgUrl));
+            }
         } catch (Exception e) {}
 
         btn.setFont(new Font("Segoe UI", Font.BOLD, 13));
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btn.setFocusPainted(false);
         
-        // Cores personalizadas
+        // CORES
         btn.setBackground(bgColor);
         btn.setForeground(fgColor);
         
-        // Se o fundo for branco, adiciona uma borda cinza suave para definição
-        if (bgColor.equals(Color.WHITE)) {
-             btn.setBorder(BorderFactory.createLineBorder(new Color(220, 220, 220), 1));
-        } else {
-             // Remove borda de botões coloridos para visual "Flat"
-             btn.setBorderPainted(false);
-        }
+        // ESTILO FLAT E LIMPO
+        btn.setFocusPainted(false);
+        btn.setBorderPainted(false); 
+        btn.setOpaque(true);
 
-        // --- MELHORIAS DE TAMANHO E ALINHAMENTO ---
+        // PADDING INTERNO
+        btn.setBorder(new EmptyBorder(8, 20, 8, 20));
+        btn.setIconTextGap(10); 
         
-        // 1. Tamanho fixo maior
-        btn.setPreferredSize(new Dimension(150, 45)); 
-        
-        // 2. Alinha tudo à esquerda dentro do botão
-        btn.setHorizontalAlignment(SwingConstants.LEFT); 
-        
-        // 3. Margem interna (Padding) para o ícone não colar na borda esquerda
-        // Topo, Esquerda, Baixo, Direita
-        btn.setMargin(new Insets(0, 15, 0, 0)); 
-        
-        // 4. Espaço entre o ícone e o texto
-        btn.setIconTextGap(12); 
+        // ALTURA PADRONIZADA
+        btn.setPreferredSize(new Dimension(btn.getPreferredSize().width, 45));
 
         return btn;
     }
 
+    // --- CONTEÚDO PRINCIPAL ---
     private JPanel createContentPanel() {
         panelConteudo = new JPanel(new CardLayout());
         panelConteudo.setOpaque(false);
@@ -226,9 +244,23 @@ public class MainScreen extends JFrame {
         panelEmptyList.setBackground(Color.WHITE);
         panelEmptyList.setBorder(BorderFactory.createLineBorder(new Color(230,230,230), 1));
         
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0; gbc.gridy = 0;
+        gbc.anchor = GridBagConstraints.CENTER;
+        
+        java.net.URL imgUrl = getClass().getResource("/br/ufrpe/todoacademic/resources/lists.png");
+        if (imgUrl != null) {
+            JLabel lblImage = new JLabel(new ImageIcon(imgUrl));
+            gbc.insets = new Insets(0, 0, 20, 0); 
+            panelEmptyList.add(lblImage, gbc);
+        }
+
         JLabel lblEmpty = new JLabel("<html><center><h2>Nenhuma tarefa por aqui! :D</h2><br/>Clique em <b>'Nova Tarefa'</b> para começar.</center></html>");
         lblEmpty.setForeground(new Color(150, 150, 150));
-        panelEmptyList.add(lblEmpty);
+        
+        gbc.gridy = 1;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        panelEmptyList.add(lblEmpty, gbc);
 
         panelConteudo.add(scroll, "TABELA");
         panelConteudo.add(panelEmptyList, "EMPTY");
@@ -242,8 +274,23 @@ public class MainScreen extends JFrame {
         table.setGridColor(new Color(230, 230, 230));
         table.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        
-        // Cabeçalho
+
+        if (table.getColumnCount() > 0) {
+            TableColumn colId = table.getColumnModel().getColumn(0);
+            colId.setMinWidth(50);
+            colId.setMaxWidth(50);
+            colId.setPreferredWidth(50);
+        }
+
+        if (table.getColumnCount() > 0) {
+            int lastIndex = table.getColumnModel().getColumnCount() - 1;
+            TableColumn colPrioridade = table.getColumnModel().getColumn(lastIndex);
+            colPrioridade.setMinWidth(80);
+            colPrioridade.setMaxWidth(80);
+            colPrioridade.setPreferredWidth(80);
+        }
+
+        // Renderizadores
         JTableHeader header = table.getTableHeader();
         header.setDefaultRenderer(new DefaultTableCellRenderer() {
             @Override
@@ -252,29 +299,66 @@ public class MainScreen extends JFrame {
                 lbl.setFont(new Font("Segoe UI", Font.BOLD, 12));
                 lbl.setForeground(new Color(100, 100, 100));
                 lbl.setBackground(new Color(248, 249, 250));
-                lbl.setBorder(new EmptyBorder(0, 10, 0, 0));
-                lbl.setHorizontalAlignment(JLabel.LEFT);
+                lbl.setBorder(new EmptyBorder(0, 10, 0, 10));
+
+                int lastIdx = table.getColumnModel().getColumnCount() - 1;
+                if (column == 0 || column == lastIdx) {
+                    lbl.setHorizontalAlignment(JLabel.CENTER);
+                } else {
+                    lbl.setHorizontalAlignment(JLabel.LEFT);
+                }
                 return lbl;
             }
         });
-        
-        // Células
-        table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+
+        DefaultTableCellRenderer cellRenderer = new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                setBorder(new EmptyBorder(0, 10, 0, 10));
-                
+
+                if (c instanceof JLabel) {
+                    JLabel lbl = (JLabel) c;
+                    lbl.setBorder(new EmptyBorder(0, 10, 0, 10));
+
+                    int lastIdx = table.getColumnModel().getColumnCount() - 1;
+
+                    if (column == 0) { 
+                        lbl.setHorizontalAlignment(JLabel.CENTER);
+                    } else if (column == lastIdx) { 
+                        lbl.setHorizontalAlignment(JLabel.CENTER);
+                        try {
+                            int prioridade = Integer.parseInt(value.toString());
+                            lbl.setFont(lbl.getFont().deriveFont(Font.BOLD));
+                            
+                            if (prioridade >= 4) { 
+                                lbl.setForeground(new Color(220, 53, 69)); 
+                            } else if (prioridade == 3) { 
+                                lbl.setForeground(new Color(255, 193, 7)); 
+                            } else {
+                                lbl.setForeground(new Color(40, 167, 69)); 
+                            }
+                        } catch (Exception e) {}
+                    } else {
+                        lbl.setHorizontalAlignment(JLabel.LEFT);
+                    }
+                    
+                    if (isSelected) {
+                        lbl.setForeground(Color.BLACK);
+                    }
+                }
+
                 if (isSelected) {
                     c.setBackground(new Color(220, 245, 230));
-                    c.setForeground(Color.BLACK);
                 } else {
                     c.setBackground(Color.WHITE);
-                    c.setForeground(COLOR_TEXT_DARK);
                 }
                 return c;
             }
-        });
+        };
+
+        table.setDefaultRenderer(Object.class, cellRenderer);
+        table.setDefaultRenderer(Integer.class, cellRenderer);
+        table.setDefaultRenderer(Long.class, cellRenderer);
     }
 
     private JPanel createStatusBar() {
@@ -290,8 +374,7 @@ public class MainScreen extends JFrame {
         return status;
     }
 
-    // --- LÓGICA ---
-
+    // --- LÓGICA / AÇÕES ---
     private void carregarTarefas() {
         CardLayout cl = (CardLayout) panelConteudo.getLayout();
         try {
@@ -308,86 +391,86 @@ public class MainScreen extends JFrame {
         }
     }
 
-    private void onNovaTarefa() {
+    private void abrirFormularioNovaTarefa() {
         TarefaFormDialog dialog = new TarefaFormDialog(this, tarefaService);
         dialog.setOnTarefaSalva(this::carregarTarefas);
         dialog.setVisible(true);
+    }
+    
+    private void onVisualizarTarefa() {
+        int selectedRow = tableTarefas.getSelectedRow();
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(this, "Selecione uma tarefa para visualizar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        int id = (int) tableTarefas.getValueAt(selectedRow, 0);
+        try {
+            Tarefa t = tarefaService.buscarPorId(id);
+            TarefaFormDialog dialog = new TarefaFormDialog(this, tarefaService, t);
+            dialog.ativarModoLeitura(); 
+            dialog.setVisible(true);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Erro ao carregar tarefa: " + e.getMessage());
+        }
     }
 
     private void onEditarTarefa() {
         int selectedRow = tableTarefas.getSelectedRow();
         if (selectedRow == -1) {
-            JOptionPane.showMessageDialog(this,
-                    "Selecione uma tarefa na tabela.",
-                    "Nenhuma tarefa selecionada",
-                    JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Selecione uma tarefa na tabela.", "Aviso", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
-
-        Tarefa t = tarefaTableModel.getTarefa(selectedRow);
-        if (t == null) {
-            JOptionPane.showMessageDialog(this,
-                    "Não foi possível obter a tarefa selecionada.",
-                    "Erro",
-                    JOptionPane.ERROR_MESSAGE);
-            return;
+        int id = (int) tableTarefas.getValueAt(selectedRow, 0);
+        try {
+             Tarefa t = tarefaService.buscarPorId(id);
+             TarefaFormDialog dialog = new TarefaFormDialog(this, tarefaService, t);
+             dialog.setOnTarefaSalva(this::carregarTarefas);
+             dialog.setVisible(true);
+        } catch(Exception e) {
+             JOptionPane.showMessageDialog(this, "Erro: " + e.getMessage());
         }
-
-        TarefaFormDialog dialog = new TarefaFormDialog(this, tarefaService, t);
-        dialog.setOnTarefaSalva(this::carregarTarefas);
-        dialog.setVisible(true);
     }
 
     private void onConcluirTarefa() {
         int selectedRow = tableTarefas.getSelectedRow();
         if (selectedRow == -1) {
-            JOptionPane.showMessageDialog(this,
-                    "Selecione uma tarefa na tabela.",
-                    "Nenhuma tarefa selecionada",
-                    JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Selecione uma tarefa na tabela.", "Aviso", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
-
-        Tarefa t = tarefaTableModel.getTarefa(selectedRow);
+        int id = (int) tableTarefas.getValueAt(selectedRow, 0);
         try {
-            tarefaService.concluirTarefa(t.getId());
+            tarefaService.concluirTarefa(id);
             carregarTarefas();
         } catch (RepositoryException e) {
-            JOptionPane.showMessageDialog(this,
-                    "Erro ao concluir tarefa: " + e.getMessage(),
-                    "Erro",
-                    JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Erro ao concluir tarefa: " + e.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
         }
     }
 
     private void onExcluirTarefa() {
         int selectedRow = tableTarefas.getSelectedRow();
         if (selectedRow == -1) {
-            JOptionPane.showMessageDialog(this,
-                    "Selecione uma tarefa na tabela.",
-                    "Nenhuma tarefa selecionada",
-                    JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Selecione uma tarefa na tabela.", "Aviso", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
-
-        Tarefa t = tarefaTableModel.getTarefa(selectedRow);
+        int id = (int) tableTarefas.getValueAt(selectedRow, 0);
+        
+        Tarefa t = null;
+        try { t = tarefaService.buscarPorId(id); } catch(Exception e){}
+        String nome = (t != null) ? t.getTitulo() : "Selecionada";
 
         int confirm = JOptionPane.showConfirmDialog(
                 this,
-                "Tem certeza que deseja excluir a tarefa \"" + t.getTitulo() + "\"?",
+                "Tem certeza que deseja excluir a tarefa \"" + nome + "\"?",
                 "Confirmar exclusão",
                 JOptionPane.YES_NO_OPTION
         );
 
         if (confirm == JOptionPane.YES_OPTION) {
             try {
-                tarefaService.removerTarefa(t.getId());
+                tarefaService.removerTarefa(id);
                 carregarTarefas();
             } catch (RepositoryException e) {
-                JOptionPane.showMessageDialog(this,
-                        "Erro ao excluir tarefa: " + e.getMessage(),
-                        "Erro",
-                        JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Erro ao excluir tarefa: " + e.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
             }
         }
     }

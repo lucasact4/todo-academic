@@ -8,6 +8,8 @@ import br.ufrpe.todoacademic.model.TarefaSimples;
 import br.ufrpe.todoacademic.repository.TarefaRepository;
 import br.ufrpe.todoacademic.model.TarefaEstudo;
 import br.ufrpe.todoacademic.model.TarefaTrabalhoGrupo;
+import br.ufrpe.todoacademic.model.TarefaProva;
+import br.ufrpe.todoacademic.model.TarefaApresentacao;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -42,16 +44,25 @@ public class TarefaService {
         String tipo = tipoTexto != null ? tipoTexto.trim().toLowerCase() : "";
 
         switch (tipo) {
+            // --- TIPO: ESTUDO ---
             case "estudo":
-            case "prova":
                 return new TarefaEstudo(titulo, desc, disc, resp, notas, data);
 
+            // --- TIPO: PROVA (Agora tem classe própria) ---
+            case "prova":
+                return new TarefaProva(titulo, desc, disc, resp, notas, data);
+
+            // --- TIPO: TRABALHO EM GRUPO ---
             case "trabalho em grupo":
             case "trabalho":
-            case "apresentação":
-            case "apresentacao":
                 return new TarefaTrabalhoGrupo(titulo, desc, disc, resp, notas, data);
 
+            // --- TIPO: APRESENTAÇÃO (Agora tem classe própria) ---
+            case "apresentação":
+            case "apresentacao":
+                return new TarefaApresentacao(titulo, desc, disc, resp, notas, data);
+
+            // --- DEFAULT: SIMPLES ---
             case "simples":
             default:
                 return new TarefaSimples(titulo, desc, disc, resp, notas, data);
