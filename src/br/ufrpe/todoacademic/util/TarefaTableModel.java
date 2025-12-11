@@ -1,31 +1,40 @@
 package br.ufrpe.todoacademic.util;
 
 import br.ufrpe.todoacademic.model.Tarefa;
-
 import javax.swing.table.AbstractTableModel;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
-// TableModel usado pela JTable da tela principal para exibir a lista de tarefas
 public class TarefaTableModel extends AbstractTableModel {
 
+    // REMOVIDO "Disciplina"
     private final String[] colunas = {
             "ID",
             "Título",
             "Tipo",
-            "Disciplina",
             "Responsável",
             "Prazo",
             "Status",
             "Prioridade"
     };
 
-    // fonte de dados que a tabela vai renderizar
     private List<Tarefa> tarefas = new ArrayList<>();
+    private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
-    private final DateTimeFormatter dateFormatter =
-            DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    public void setTarefas(List<Tarefa> tarefas) {
+        this.tarefas = tarefas != null ? tarefas : new ArrayList<>();
+        fireTableDataChanged();
+    }
+
+    public List<Tarefa> getTarefas() {
+        return tarefas;
+    }
+
+    public Tarefa getTarefa(int rowIndex) {
+        if (rowIndex < 0 || rowIndex >= tarefas.size()) return null;
+        return tarefas.get(rowIndex);
+    }
 
     @Override
     public int getRowCount() {
@@ -50,47 +59,26 @@ public class TarefaTableModel extends AbstractTableModel {
             case 0 -> t.getId();
             case 1 -> t.getTitulo();
             case 2 -> t.getTipo();
-            case 3 -> t.getDisciplina();
-            case 4 -> t.getResponsavel();
-            case 5 -> t.getDataLimite() != null
-                    ? t.getDataLimite().format(dateFormatter)
-                    : "";
-            case 6 -> t.getStatus() != null ? t.getStatus().name() : "";
-            case 7 -> t.calcularPrioridade(); // usa a regra de cada subtipo de Tarefa
+            // Case 3 (Disciplina) foi removido, Responsável assume o lugar
+            case 3 -> t.getResponsavel();
+            case 4 -> t.getDataLimite() != null ? t.getDataLimite().format(dateFormatter) : "";
+            case 5 -> t.getStatus() != null ? t.getStatus().name() : "PENDENTE";
+            case 6 -> t.calcularPrioridade();
             default -> "";
         };
     }
 
     @Override
     public Class<?> getColumnClass(int columnIndex) {
-        if (tarefas.isEmpty()) {
-            return Object.class;
+        // Define que ID (0) e Prioridade (6) são números para ordenação correta
+        if (columnIndex == 0 || columnIndex == 6) {
+            return Integer.class;
         }
-        return getValueAt(0, columnIndex).getClass();
+        return Object.class;
     }
 
     @Override
     public boolean isCellEditable(int rowIndex, int columnIndex) {
-        // tabela toda só leitura (edição acontece no formulário próprio)
         return false;
-    }
-
-    // --------- Métodos de apoio usados pela tela ---------
-
-    public List<Tarefa> getTarefas() {
-        return tarefas;
-    }
-
-    // atualiza a lista e avisa a JTable para se redesenhar
-    public void setTarefas(List<Tarefa> tarefas) {
-        this.tarefas = tarefas != null ? tarefas : new ArrayList<>();
-        fireTableDataChanged();
-    }
-
-    public Tarefa getTarefa(int rowIndex) {
-        if (rowIndex < 0 || rowIndex >= tarefas.size()) {
-            return null;
-        }
-        return tarefas.get(rowIndex);
     }
 }

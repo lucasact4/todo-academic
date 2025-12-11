@@ -1,11 +1,16 @@
 package br.ufrpe.todoacademic.view;
 
+import br.ufrpe.todoacademic.exception.TarefaInvalidaException;
 import br.ufrpe.todoacademic.model.Tarefa;
+import br.ufrpe.todoacademic.model.TipoUsuario;
+import br.ufrpe.todoacademic.model.Usuario;
+import br.ufrpe.todoacademic.service.AuthService;
 import br.ufrpe.todoacademic.service.TarefaService;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.MatteBorder;
+import javax.swing.text.MaskFormatter;
 import java.awt.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -14,45 +19,71 @@ import java.time.format.DateTimeParseException;
 public class TarefaFormDialog extends JDialog {
 
     private static final DateTimeFormatter FORMATTER_DATA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    
+    // Cores
     private final Color COLOR_PRIMARY = new Color(0, 153, 102);
     private final Color COLOR_BG_HEADER = new Color(0, 153, 102);
     private final Color COLOR_BG_FORM = Color.WHITE;
     private final Color COLOR_SIDEBAR_BG = new Color(250, 250, 250);
 
+    // Serviços e Modelos
     private final TarefaService tarefaService;
+    private final Usuario usuarioLogado;
+    private final AuthService authService;
     private Tarefa tarefaEdicao;
     private Runnable onTarefaSalva;
 
+    // Componentes de UI
     private JButton btnSalvar;
     private JButton btnCancelar;
+    private JButton btnCalendar;
+    private JButton btnVinculos;
 
     private JLabel lblTitle;
     private JLabel lblSub;
 
     private JTextField txtTitulo;
     private JTextField txtDisciplina;
-    private JTextField txtResponsavel;
-    private JTextField txtDataLimite;
+    private JComboBox<String> cbResponsavel; // Combo box para o Criador
+    private JFormattedTextField txtDataLimite;
     private JTextField txtNotas;
     private JTextArea txtDescricao;
     private JComboBox<String> comboTipo;
-    private JTextPane txtInfoPrioridade;
+    
+    // OTIMIZAÇÃO: Componente separado
+    private PrioridadeSidebar sidebarPrioridade; 
 
-    public TarefaFormDialog(Frame parent, TarefaService tarefaService) {
-        this(parent, tarefaService, null);
+    // --- CONSTRUTORES ---
+
+    public TarefaFormDialog(Frame parent, TarefaService tarefaService, Usuario usuarioLogado) {
+        this(parent, tarefaService, usuarioLogado, null);
     }
 
-    public TarefaFormDialog(Frame parent, TarefaService tarefaService, Tarefa tarefaEdicao) {
+    public TarefaFormDialog(Frame parent, TarefaService tarefaService, Usuario usuarioLogado, Tarefa tarefaEdicao) {
         super(parent, true);
         this.tarefaService = tarefaService;
+        this.usuarioLogado = usuarioLogado;
         this.tarefaEdicao = tarefaEdicao;
+        this.authService = new AuthService();
+        
         initComponents();
 
-        comboTipo.addActionListener(e -> atualizarExplicacaoPrioridade());
+        // OTIMIZAÇÃO: Chama o método do componente separado
+        comboTipo.addActionListener(e -> {
+            String tipo = (String) comboTipo.getSelectedItem();
+            sidebarPrioridade.atualizarRegra(tipo);
+        });
+        
         carregarDadosSeEdicao();
 
         if (tarefaEdicao == null) {
-            atualizarExplicacaoPrioridade();
+            // Atualiza sidebar inicial
+            sidebarPrioridade.atualizarRegra((String) comboTipo.getSelectedItem());
+            
+            // SELEÇÃO AUTOMÁTICA DO CRIADOR
+            if(usuarioLogado != null) {
+                cbResponsavel.setSelectedItem(usuarioLogado.getNome());
+            }
         }
     }
 
@@ -60,34 +91,39 @@ public class TarefaFormDialog extends JDialog {
         this.onTarefaSalva = onTarefaSalva;
     }
 
+    // --- MODO LEITURA ---
     public void ativarModoLeitura() {
         setTitle("Visualizar Tarefa");
-
         lblTitle.setText("Visualizar Tarefa");
         lblSub.setText("Detalhes completos da tarefa.");
 
         txtTitulo.setEditable(false);
         txtDisciplina.setEditable(false);
-        txtResponsavel.setEditable(false);
+        cbResponsavel.setEnabled(false);
         txtDataLimite.setEditable(false);
         txtNotas.setEditable(false);
         txtDescricao.setEditable(false);
         comboTipo.setEnabled(false);
+        if(btnCalendar != null) btnCalendar.setEnabled(false);
+
+        if(btnVinculos != null) btnVinculos.setText("Ver Alunos");
 
         Color readOnlyColor = new Color(252, 252, 252);
         txtTitulo.setBackground(readOnlyColor);
         txtDisciplina.setBackground(readOnlyColor);
-        txtResponsavel.setBackground(readOnlyColor);
         txtDataLimite.setBackground(readOnlyColor);
         txtNotas.setBackground(readOnlyColor);
         txtDescricao.setBackground(readOnlyColor);
 
         txtTitulo.setBorder(null);
         txtDescricao.setBorder(null);
+        txtDataLimite.setBorder(null);
 
         btnSalvar.setVisible(false);
         btnCancelar.setText("Fechar");
     }
+
+    // --- INICIALIZAÇÃO DE COMPONENTES ---
 
     private void initComponents() {
         setTitle(tarefaEdicao == null ? "Nova Tarefa" : "Editar Tarefa");
@@ -102,7 +138,11 @@ public class TarefaFormDialog extends JDialog {
         root.add(createHeader(), BorderLayout.NORTH);
 
         JPanel contentContainer = new JPanel(new BorderLayout());
-        contentContainer.add(createSidePanel(), BorderLayout.WEST);
+        
+        // OTIMIZAÇÃO: Instancia o componente separado aqui
+        sidebarPrioridade = new PrioridadeSidebar();
+        contentContainer.add(sidebarPrioridade, BorderLayout.WEST); 
+        
         contentContainer.add(createFormPanel(), BorderLayout.CENTER);
 
         root.add(contentContainer, BorderLayout.CENTER);
@@ -134,46 +174,11 @@ public class TarefaFormDialog extends JDialog {
 
         textPanel.add(lblTitle);
         textPanel.add(lblSub);
-
         header.add(textPanel, BorderLayout.CENTER);
         return header;
     }
 
-    private JPanel createSidePanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setPreferredSize(new Dimension(380, 0));
-        panel.setBackground(COLOR_SIDEBAR_BG);
-        panel.setBorder(new MatteBorder(0, 0, 0, 1, new Color(230, 230, 230)));
-
-        JLabel lblHeader = new JLabel(" Regra de Prioridade");
-        lblHeader.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        lblHeader.setForeground(new Color(80, 80, 80));
-        lblHeader.setBorder(new EmptyBorder(20, 20, 15, 20));
-
-        try {
-            java.net.URL iconUrl = getClass().getResource("/br/ufrpe/todoacademic/resources/info.png");
-            if (iconUrl != null) {
-                lblHeader.setIcon(new ImageIcon(iconUrl));
-            }
-        } catch (Exception e) {}
-
-        txtInfoPrioridade = new JTextPane();
-        txtInfoPrioridade.setContentType("text/html");
-        txtInfoPrioridade.setEditable(false);
-        txtInfoPrioridade.setOpaque(false);
-        txtInfoPrioridade.setBorder(new EmptyBorder(0, 15, 20, 15));
-
-        JScrollPane scroll = new JScrollPane(txtInfoPrioridade);
-        scroll.setBorder(null);
-        scroll.getViewport().setOpaque(false);
-        scroll.setOpaque(false);
-
-        panel.add(lblHeader, BorderLayout.NORTH);
-        panel.add(scroll, BorderLayout.CENTER);
-
-        return panel;
-    }
-
+    // --- FORMULÁRIO ---
     private JPanel createFormPanel() {
         JPanel form = new JPanel(new GridBagLayout());
         form.setBackground(COLOR_BG_FORM);
@@ -185,8 +190,25 @@ public class TarefaFormDialog extends JDialog {
 
         txtTitulo = createTextField("Ex: Relatório Final de OO");
         txtDisciplina = createTextField("Ex: Programação II");
-        txtResponsavel = createTextField("Ex: Lucas");
-        txtDataLimite = createTextField("DD/MM/AAAA");
+        
+        // --- CAMPO RESP. CRIADOR (COMBOBOX) ---
+        cbResponsavel = new JComboBox<>();
+        cbResponsavel.setBackground(Color.WHITE);
+        cbResponsavel.setPreferredSize(new Dimension(100, 40));
+        
+        java.util.List<Usuario> listaUsuarios = authService.listarTodos();
+        for (Usuario u : listaUsuarios) {
+            cbResponsavel.addItem(u.getNome());
+        }
+        
+        // REGRA DE NEGÓCIO: Travamento do Campo Criador
+        // Se for ALUNO ou PROFESSOR, trava no nome dele. Só ADMIN pode mudar.
+        if (usuarioLogado.getTipo() == TipoUsuario.ALUNO || usuarioLogado.getTipo() == TipoUsuario.PROFESSOR) {
+            cbResponsavel.setSelectedItem(usuarioLogado.getNome());
+            cbResponsavel.setEnabled(false); // Travado
+        }
+
+        txtDataLimite = createFormattedDateField();
         txtNotas = createTextField("Ex: Vale nota; Entregar impresso...");
 
         comboTipo = new JComboBox<>(new String[]{"Simples", "Estudo", "Trabalho em Grupo", "Apresentação", "Prova"});
@@ -201,58 +223,73 @@ public class TarefaFormDialog extends JDialog {
         JScrollPane scrollDescricao = new JScrollPane(txtDescricao);
         scrollDescricao.putClientProperty("JComponent.outline", "gray");
 
-        gbc.gridx = 0; gbc.gridy = 0;
-        gbc.gridwidth = 2;
-        gbc.weightx = 1.0;
+        // -- Layout Grid --
+        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2; gbc.weightx = 1.0;
         gbc.insets = new Insets(0, 0, 15, 0);
         form.add(createFieldGroup("Título da Tarefa *", txtTitulo), gbc);
 
-        gbc.gridy = 1;
-        gbc.gridwidth = 1;
-        gbc.weightx = 0.5;
-        gbc.gridx = 0;
-        gbc.insets = new Insets(0, 0, 15, 15);
+        gbc.gridy = 1; gbc.gridwidth = 1; gbc.weightx = 0.5; gbc.insets = new Insets(0, 0, 15, 15);
         form.add(createFieldGroup("Disciplina *", txtDisciplina), gbc);
 
-        gbc.gridx = 1;
-        gbc.insets = new Insets(0, 0, 15, 0);
-        form.add(createFieldGroup("Responsável *", txtResponsavel), gbc);
+        gbc.gridx = 1; gbc.insets = new Insets(0, 0, 15, 0);
+        // MUDANÇA NO TÍTULO DO CAMPO
+        form.add(createFieldGroup("Resp. Criador *", cbResponsavel), gbc);
 
-        gbc.gridy = 2;
-        gbc.gridx = 0;
-        gbc.insets = new Insets(0, 0, 15, 15);
+        gbc.gridy = 2; gbc.gridx = 0; gbc.insets = new Insets(0, 0, 15, 15);
         form.add(createFieldGroup("Tipo", comboTipo), gbc);
 
-        gbc.gridx = 1;
-        gbc.insets = new Insets(0, 0, 15, 0);
-        form.add(createFieldGroup("Data Limite", txtDataLimite), gbc);
+        // Data com calendário
+        gbc.gridx = 1; gbc.insets = new Insets(0, 0, 15, 0);
+        JPanel pnlData = new JPanel(new BorderLayout(5, 0));
+        pnlData.setBackground(COLOR_BG_FORM);
+        btnCalendar = new JButton("📅");
+        btnCalendar.setPreferredSize(new Dimension(40, 40));
+        btnCalendar.setFocusPainted(false);
+        btnCalendar.setBackground(new Color(240, 240, 240));
+        btnCalendar.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnCalendar.addActionListener(e -> abrirCalendario());
+        pnlData.add(txtDataLimite, BorderLayout.CENTER);
+        pnlData.add(btnCalendar, BorderLayout.EAST);
+        form.add(createFieldGroup("Data Limite", pnlData), gbc);
 
-        gbc.gridy = 3;
-        gbc.gridx = 0;
-        gbc.gridwidth = 2;
-        gbc.weightx = 1.0;
-        gbc.insets = new Insets(0, 0, 15, 0);
+        gbc.gridy = 3; gbc.gridx = 0; gbc.gridwidth = 2; gbc.weightx = 1.0; gbc.insets = new Insets(0, 0, 15, 0);
         form.add(createFieldGroup("Notas Rápidas", txtNotas), gbc);
 
-        gbc.gridy = 4;
-        gbc.weighty = 1.0;
-        gbc.insets = new Insets(0, 0, 0, 0);
+        gbc.gridy = 4; gbc.weighty = 1.0; gbc.insets = new Insets(0, 0, 0, 0);
         form.add(createFieldGroup("Descrição Detalhada", scrollDescricao), gbc);
 
         return form;
     }
 
+    // --- MÉTODOS AUXILIARES ---
+
+    private JFormattedTextField createFormattedDateField() {
+        JFormattedTextField field;
+        try {
+            MaskFormatter mask = new MaskFormatter("##/##/####");
+            mask.setPlaceholderCharacter('_');
+            field = new JFormattedTextField(mask);
+            field.setPreferredSize(new Dimension(100, 40));
+            field.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        } catch (Exception e) { field = new JFormattedTextField(); }
+        return field;
+    }
+
+    private void abrirCalendario() {
+        CalendarDialog cal = new CalendarDialog(this, dataSelecionada -> {
+            txtDataLimite.setValue(dataSelecionada.format(FORMATTER_DATA));
+        });
+        cal.setVisible(true);
+    }
+
     private JPanel createFieldGroup(String labelText, JComponent field) {
         JPanel panel = new JPanel(new BorderLayout(0, 5));
         panel.setBackground(COLOR_BG_FORM);
-
         JLabel lbl = new JLabel(labelText);
         lbl.setFont(new Font("Segoe UI", Font.BOLD, 12));
         lbl.setForeground(new Color(80, 80, 80));
-
         panel.add(lbl, BorderLayout.NORTH);
         panel.add(field, BorderLayout.CENTER);
-
         return panel;
     }
 
@@ -268,6 +305,25 @@ public class TarefaFormDialog extends JDialog {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 15));
         panel.setBackground(new Color(245, 245, 245));
         panel.setBorder(new MatteBorder(1, 0, 0, 0, new Color(230, 230, 230)));
+
+        if (tarefaEdicao != null) {
+            btnVinculos = new JButton("Vínculos");
+            btnVinculos.setPreferredSize(new Dimension(160, 35));
+            btnVinculos.setBackground(new Color(230, 240, 255));
+            btnVinculos.setForeground(new Color(0, 80, 180));
+            btnVinculos.setFocusPainted(false);
+            btnVinculos.setFont(new Font("Segoe UI", Font.BOLD, 13));
+            try {
+                java.net.URL imgUrl = getClass().getResource("/br/ufrpe/todoacademic/resources/group.png");
+                if(imgUrl != null) btnVinculos.setIcon(new ImageIcon(imgUrl));
+            } catch(Exception e){}
+
+            btnVinculos.addActionListener(e -> {
+                VinculosDialog dialog = new VinculosDialog(this, tarefaEdicao, usuarioLogado);
+                dialog.setVisible(true);
+            });
+            panel.add(btnVinculos);
+        }
 
         btnCancelar = new JButton("Cancelar");
         btnCancelar.setPreferredSize(new Dimension(100, 35));
@@ -286,88 +342,11 @@ public class TarefaFormDialog extends JDialog {
 
         panel.add(btnCancelar);
         panel.add(btnSalvar);
-        getRootPane().setDefaultButton(btnSalvar);
-        return panel;
-    }
-
-    private void atualizarExplicacaoPrioridade() {
-        String tipo = (String) comboTipo.getSelectedItem();
-        if (tipo == null) return;
-
-        String style = "<style>"
-                + "body { font-family: 'Segoe UI', sans-serif; font-size: 11px; margin: 0; color: #555; }"
-                + "h2 { font-size: 11px; margin-bottom: 5px; color: #333; }"
-                + "ul { margin-left: 20px; padding: 0; }"
-                + "li { margin-bottom: 6px; }"
-                + ".green { color: #28a745; font-weight: bold; }"
-                + ".blue  { color: #007bff; font-weight: bold; }"
-                + ".yellow{ color: #d39e00; font-weight: bold; }"
-                + ".orange{ color: #fd7e14; font-weight: bold; }"
-                + ".red   { color: #dc3545; font-weight: bold; }"
-                + ".gray  { color: #888; }"
-                + "</style>";
-
-        String conteudo = "";
-
-        switch (tipo.toLowerCase()) {
-            case "simples":
-                conteudo = "<b>Tarefas Simples:</b><br>Dependem apenas do prazo final.<br>"
-                        + "<ul>"
-                        + "<li>Sem prazo definido &rarr; <span class='green'>Baixa (1)</span></li>"
-                        + "<li>Até 14 dias &rarr; <span class='blue'>Normal (2)</span></li>"
-                        + "<li>Até 7 dias &rarr; <span class='yellow'>Média (3)</span></li>"
-                        + "<li>Até 2 dias &rarr; <span class='orange'>Alta (4)</span></li>"
-                        + "<li>Hoje ou Atrasada &rarr; <span class='red'>Urgente (5)</span></li>"
-                        + "</ul>";
-                break;
-
-            case "estudo":
-                conteudo = "<b>Estudo:</b><br>Atividade essencial, urgência escala rápido.<br>"
-                        + "<ul>"
-                        + "<li>Sem prazo &rarr; <span class='blue'>Normal (2)</span> <span class='gray'>(Estudar é vital!)</span></li>"
-                        + "<li>Até 20 dias &rarr; <span class='blue'>Normal (2)</span></li>"
-                        + "<li>Até 10 dias &rarr; <span class='yellow'>Média (3)</span></li>"
-                        + "<li>Até 3 dias &rarr; <span class='orange'>Alta (4)</span></li>"
-                        + "<li>Hoje ou Atrasada &rarr; <span class='red'>Urgente (5)</span></li>"
-                        + "</ul>";
-                break;
-
-            case "prova":
-                conteudo = "<b>Prova:</b><br>Exige atenção máxima e preparação prévia.<br>"
-                        + "<ul>"
-                        + "<li>Seguem a escala de Estudo, mas com mais rigor.</li>"
-                        + "<li><span class='gray'>Nota:</span> A data limite deve ser o dia da prova.</li>"
-                        + "<li>3 dias antes &rarr; Já entra em <span class='orange'>Alta Prioridade (4)</span>.</li>"
-                        + "<li>No dia &rarr; <span class='red'>Urgente (5)</span>.</li>"
-                        + "</ul>";
-                break;
-
-            case "trabalho em grupo":
-                conteudo = "<b>Trabalho em Grupo:</b><br>Peso maior na nota, exige antecedência.<br>"
-                        + "<ul>"
-                        + "<li>Sem prazo &rarr; <span class='yellow'>Média (3)</span> <span class='gray'>(Coordenação demora)</span></li>"
-                        + "<li>Até 30 dias &rarr; <span class='blue'>Normal (2)</span></li>"
-                        + "<li>Até 15 dias &rarr; <span class='yellow'>Média (3)</span></li>"
-                        + "<li>Até 5 dias &rarr; <span class='orange'>Alta (4)</span></li>"
-                        + "<li>Hoje ou Atrasada &rarr; <span class='red'>Urgente (5)</span></li>"
-                        + "</ul>";
-                break;
-
-            case "apresentação":
-                conteudo = "<b>Apresentação:</b><br>Requer preparação de slides e ensaio.<br>"
-                        + "<ul>"
-                        + "<li>Inicia com prioridade mínima <span class='yellow'>Média (3)</span>.</li>"
-                        + "<li>5 dias antes &rarr; Sobe para <span class='orange'>Alta (4)</span> para ensaios.</li>"
-                        + "<li>Atenção aos prazos de entrega de slides vs dia da apresentação.</li>"
-                        + "</ul>";
-                break;
-
-            default:
-                conteudo = "<span class='gray'>Selecione um tipo acima para ver como a prioridade será calculada.</span>";
+        
+        if (btnSalvar.isVisible()) {
+            getRootPane().setDefaultButton(btnSalvar);
         }
-
-        txtInfoPrioridade.setText("<html><head>" + style + "</head><body>" + conteudo + "</body></html>");
-        txtInfoPrioridade.setCaretPosition(0);
+        return panel;
     }
 
     private void carregarDadosSeEdicao() {
@@ -375,17 +354,19 @@ public class TarefaFormDialog extends JDialog {
 
         txtTitulo.setText(tarefaEdicao.getTitulo());
         txtDisciplina.setText(tarefaEdicao.getDisciplina());
-        txtResponsavel.setText(tarefaEdicao.getResponsavel());
+        // Define o item selecionado no combo
+        cbResponsavel.setSelectedItem(tarefaEdicao.getResponsavel());
         txtNotas.setText(tarefaEdicao.getNotas());
         txtDescricao.setText(tarefaEdicao.getDescricao());
 
         if (tarefaEdicao.getDataLimite() != null) {
-            txtDataLimite.setText(tarefaEdicao.getDataLimite().format(FORMATTER_DATA));
+            txtDataLimite.setValue(tarefaEdicao.getDataLimite().format(FORMATTER_DATA));
         }
 
         if (tarefaEdicao.getTipo() != null) {
             comboTipo.setSelectedItem(tarefaEdicao.getTipo());
-            atualizarExplicacaoPrioridade();
+            // Atualiza sidebar
+            sidebarPrioridade.atualizarRegra(tarefaEdicao.getTipo());
         }
     }
 
@@ -393,25 +374,24 @@ public class TarefaFormDialog extends JDialog {
         try {
             String titulo = txtTitulo.getText().trim();
             String disciplina = txtDisciplina.getText().trim();
-            String responsavel = txtResponsavel.getText().trim();
+            String responsavel = (String) cbResponsavel.getSelectedItem();
             String notas = txtNotas.getText().trim();
             String descricao = txtDescricao.getText().trim();
             String tipoSelecionado = (String) comboTipo.getSelectedItem();
 
-            if (titulo.isEmpty() || disciplina.isEmpty() || responsavel.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Preencha Título, Disciplina e Responsável.",
-                        "Aviso", JOptionPane.WARNING_MESSAGE);
+            if (titulo.isEmpty() || disciplina.isEmpty() || responsavel == null) {
+                JOptionPane.showMessageDialog(this, "Preencha Título, Disciplina e Resp. Criador.", "Aviso", JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
             LocalDate dataLimite = null;
-            String strData = txtDataLimite.getText().trim();
-            if (!strData.isEmpty()) {
+            String strData = txtDataLimite.getText();
+            if (!strData.equals("__/__/____") && !strData.trim().isEmpty()) {
                 dataLimite = LocalDate.parse(strData, FORMATTER_DATA);
             }
 
             if (tarefaEdicao == null) {
-                tarefaService.cadastrarTarefa(tipoSelecionado, titulo, descricao, disciplina, responsavel, notas, dataLimite);
+                tarefaService.cadastrarTarefa(usuarioLogado, tipoSelecionado, titulo, descricao, disciplina, responsavel, notas, dataLimite);
             } else {
                 tarefaEdicao.setTitulo(titulo);
                 tarefaEdicao.setDisciplina(disciplina);
@@ -419,18 +399,18 @@ public class TarefaFormDialog extends JDialog {
                 tarefaEdicao.setNotas(notas);
                 tarefaEdicao.setDescricao(descricao);
                 tarefaEdicao.setDataLimite(dataLimite);
-
-                tarefaService.atualizarTarefa(tarefaEdicao, tipoSelecionado);
+                tarefaService.atualizarTarefa(usuarioLogado, tarefaEdicao, tipoSelecionado);
             }
 
             if (onTarefaSalva != null) onTarefaSalva.run();
             dispose();
 
+        } catch (TarefaInvalidaException ex) {
+             JOptionPane.showMessageDialog(this, ex.getMessage(), "Erro de Permissão", JOptionPane.ERROR_MESSAGE);
         } catch (DateTimeParseException e) {
             JOptionPane.showMessageDialog(this, "Data inválida. Use DD/MM/AAAA.", "Erro", JOptionPane.ERROR_MESSAGE);
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Erro: " + e.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
-            e.printStackTrace();
         }
     }
 }
