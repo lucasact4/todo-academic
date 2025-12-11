@@ -66,7 +66,7 @@ public class MainScreen extends JFrame {
     private void initComponents() {
         setTitle("TodoAcademic - Logado como " + usuarioLogado.getNome());
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setMinimumSize(new Dimension(1100, 750));
+        setMinimumSize(new Dimension(1300, 800));
 
         JPanel root = new JPanel(new BorderLayout());
         root.setBackground(COLOR_BG_LIGHT);
@@ -110,7 +110,7 @@ public class MainScreen extends JFrame {
         toolbar.add(btnNova);
         
         if (usuarioLogado.getTipo() != TipoUsuario.ALUNO) {
-            String labelBtn = (usuarioLogado.getTipo() == TipoUsuario.ADMIN) ? "Usuários (Admin)" : "Meus Alunos";
+            String labelBtn = (usuarioLogado.getTipo() == TipoUsuario.ADMIN) ? "Usuários" : "Meus Alunos";
             JButton btnUsers = createButton(labelBtn, "/br/ufrpe/todoacademic/resources/users.png", BTN_USERS_BG, BTN_USERS_FG);
             btnUsers.addActionListener(e -> new UsuarioListScreen(usuarioLogado).setVisible(true));
             toolbar.add(btnUsers);
